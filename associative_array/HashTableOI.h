@@ -2,19 +2,20 @@
 
 #include "HashInterfase.h"
 
-
-class HashTable: public HashInterfase
+class HashTableOI: public HashInterfase
 {
 public:
-	HashTable();
-	HashTable(int size);
-	HashTable(const HashTable &);
-	~HashTable();
+	HashTableOI(void);
+	HashTableOI(int size);
+	HashTableOI(const HashTableOI &);
+	~HashTableOI(void);
+
 	virtual void print_to_console(){};
 
 protected:
-	Node **arr;
+	HashElement **arr;
 	int size;
+	int number;
 
 private:
 	int hash_function(std::string key);
@@ -27,7 +28,7 @@ private:
 	void _remove(std::string key, int index);
 	void _clear();
 
-	
+
 	HashElement &_asterisc(void *pointer) const;
     void _next(void *&pointer, int &current_index) const;
     void *_begin() const;
@@ -36,9 +37,11 @@ private:
     int _endIndex() const;
 
 
+	void resize();
+	int find(std::string key, int index);
 };
 
-class HashTableException: public std::exception
+class HashTableOIException: public std::exception
 {
     public:
         const char *what() const throw() {return "trying to access to not existing element";}

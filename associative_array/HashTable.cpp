@@ -1,23 +1,6 @@
 #include "HashTable.h"
 #include <iostream>
-
-
-Node::Node(const Node & other):
-	data(other.data), next(0)
-{}
-
-Node::Node(HashElement other):
-	data(other), next(0)
-{
-}
-
-Node::Node(std::string key, double value):
-	next(0)
-{
-	data.key = key;
-	data.value = value;
-}
-
+#include <cmath>
 
 
 HashTable::HashTable():
@@ -68,7 +51,7 @@ HashTable::HashTable(const HashTable & other):
 
 HashTable::~HashTable()
 {
-	clear();
+	_clear();
 }
 
 
@@ -77,62 +60,36 @@ HashTable::~HashTable()
 
 int HashTable::hash_function(std::string key)
 {
-	return ((int)key.at(0)*(int)key.at(0)*key.size())%size;
-}
-
-
-
-void HashTable::put(std::string key, double value)
-{
 	if(!size)
 	{
-		size = 256;
+		size = 128;
 		arr = new Node*[size];
 		for(int i = 0; i < size; ++i)
 			arr[i] = 0;
 	}
-	int _key = hash_function(key);
-	Node *work = arr[_key];
-	if(!has(key))
+	return ((int)(key.at(0)*(sqrt(5)-1)/2*key.size()))%size;
+}
+
+
+
+void HashTable::_put(std::string key, int index, double value)
+{
+	Node *work = arr[index];
+	if(!_has(key, index))
 	{
-		arr[_key] = new Node(key, value);
-		arr[_key]->next = work;
+		arr[index] = new Node(key, value);
+		arr[index]->next = work;
 	}
 }
 
-void HashTable::put(HashElement other)
-{
-	if(!size)
-	{
-		size = 256;
-		arr = new Node*[size];
-		for(int i = 0; i < size; ++i)
-			arr[i] = 0;
-	}
-	int _key = hash_function(other.key);
-	Node *work = arr[_key];
-	if(!has(other.key))
-	{
-		arr[_key] = new Node(other);
-		arr[_key]->next = work;
-	}
-}
 
-void HashTable::forse(std::string key, double value)
+void HashTable::_forse(std::string key, int index, double value)
 {
-	if(!size)
+	Node *work = arr[index];
+	if(!_has(key, index))
 	{
-		size = 256;
-		arr = new Node*[size];
-		for(int i = 0; i < size; ++i)
-			arr[i] = 0;
-	}
-	int _key = hash_function(key);
-	Node *work = arr[_key];
-	if(!has(key))
-	{
-		arr[_key] = new Node(key, value);
-		arr[_key]->next = work;
+		arr[index] = new Node(key, value);
+		arr[index]->next = work;
 	}
 	else
 	{
@@ -142,34 +99,11 @@ void HashTable::forse(std::string key, double value)
 	}
 }
 
-void HashTable::forse(HashElement other)
-{
-	if(!size)
-	{
-		size = 256;
-		arr = new Node*[size];
-		for(int i = 0; i < size; ++i)
-			arr[i] = 0;
-	}
-	int _key = hash_function(other.key);
-	Node *work = arr[_key];
-	if(!has(other.key))
-	{
-		arr[_key] = new Node(other);
-		arr[_key]->next = work;
-	}
-	else
-	{
-		while(work->data.key != other.key)
-			work = work->next;
-		work->data.value = other.value;
-	}
-}
 
-HashElement* HashTable::item(std::string key)
+
+HashElement* HashTable::_item(std::string key, int index)
 {
-	int _key = hash_function(key);
-	Node *work = arr[_key];
+	Node *work = arr[index];
 	while(work)
 	{
 		if(work->data.key == key) return &(work->data);
@@ -178,10 +112,9 @@ HashElement* HashTable::item(std::string key)
 	return 0;
 }
 
-bool HashTable::has(std::string key)
+bool HashTable::_has(std::string key, int index)
 {
-	int _key = hash_function(key);
-	Node *work = arr[_key];
+	Node *work = arr[index];
 	while(work)
 	{
 		if(work->data.key == key) return true;
@@ -192,33 +125,16 @@ bool HashTable::has(std::string key)
 
 
 
-void HashTable::print_to_console()
+void HashTable::_remove(std::string key, int index)
 {
-	Node *work;
-	for(int i = 0; i < size; ++i)
-	{
-		work = arr[i];
-		while(work)
-		{
-			std::cout<< work->data.key <<'\t' <<work->data.value << '\n';
-			work = work->next;
-		}
-	}
-}
-
-
-
-void HashTable::remove(std::string key)
-{
-	int _key = hash_function(key);
-	Node *prev,*work = arr[_key];
+	Node *prev,*work = arr[index];
 	if(!work) return;
 	if(work->data.key == key)
 	{
-		work = arr[_key]->next;
-		arr[_key]->data.value = 0;
-		delete arr[_key];
-		arr[_key] = work;
+		work = arr[index]->next;
+		arr[index]->data.value = 0;
+		delete arr[index];
+		arr[index] = work;
 		return;
 	}
 	while(work->next)
@@ -236,7 +152,7 @@ void HashTable::remove(std::string key)
 	}
 }
 
-void HashTable::clear()
+void HashTable::_clear()
 {
 	for(int i = 0; i < size; ++i)
 	{
@@ -251,4 +167,81 @@ void HashTable::clear()
 		}	
 	}
 	delete [] arr;
+}
+
+
+//////////////////////////////////////////////////////////////
+
+HashElement &HashTable::_asterisc(void *pointer) const
+{
+    if(pointer)
+		return ((Node*)pointer)->data;
+    else
+        throw HashTableException();
+}
+
+void HashTable::_next(void *&pointer, int &current_index) const
+{
+	if(pointer)
+	{
+		Node *work = (Node*)pointer;
+		if(work->next)
+		{
+			pointer = (void*)work->next;
+		}
+		else
+		{
+			++current_index;
+			for(; current_index < size; ++current_index)
+			{
+				if(arr[current_index])
+				{
+					pointer = (void*)arr[current_index];
+					return;
+				}
+			}
+			pointer = 0;
+		}
+	}
+}
+
+void *HashTable::_begin() const
+{
+	int k = _beginIndex();
+	if(arr[k])
+		return (void*)arr[k];
+	return 0;
+}
+
+void *HashTable::_end() const
+{
+	int k = _endIndex();
+	if(arr[k])
+	{
+		Node* work = arr[k];
+		while(work->next)
+		{
+			work = work->next;
+		}
+		return (void*)work;
+	}
+	return 0;
+}
+
+int HashTable::_beginIndex() const
+{
+	for(int i = 0; i < size; ++i)
+	{
+		if(arr[i]) return i;
+	}
+	return 0;
+}
+
+int HashTable::_endIndex() const
+{
+	for(int i = size-1; 0 < i; --i)
+	{
+		if(arr[i]) return i;
+	}
+	return 0;
 }
